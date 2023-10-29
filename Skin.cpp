@@ -355,7 +355,7 @@ CON_COMMAND_F(knife, "Gives the player a knife", FCVAR_CLIENT_CAN_EXECUTE)
     {
         FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_gut", nullptr, nullptr, nullptr, nullptr);
     }
-	else if (strcmp(args.Arg(1), "tactical") == 0)
+	else if (strcmp(args.Arg(1), "huntsman") == 0)
     {
         FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_tactical", nullptr, nullptr, nullptr, nullptr);
     }
