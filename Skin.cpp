@@ -287,9 +287,9 @@ CON_COMMAND_F(skin, "Change Skin", FCVAR_CLIENT_CAN_EXECUTE)
 	FnEntityRemove(g_pGameEntitySystem,pPlayerWeapon,nullptr,-1);
 	FnGiveNamedItem(pPlayerPawn->m_pItemServices(),weapon_name->second.c_str(),nullptr,nullptr,nullptr,nullptr);
 	pPlayerWeapon->m_AttributeManager().m_Item().m_iAccountID() = 271098320;
-	//CCSPlayer_ItemServices* pItemServices = static_cast<CCSPlayer_ItemServices*>(pPlayerPawn->m_pItemServices());
-	//pItemServices->GiveNamedItem(weapon_name->second.c_str());
-	// g_pGameRules->PlayerRespawn(static_cast<CCSPlayerPawn*>(pPlayerPawn));
+	CCSPlayer_ItemServices* pItemServices = static_cast<CCSPlayer_ItemServices*>(pPlayerPawn->m_pItemServices());
+	pItemServices->GiveNamedItem(weapon_name->second.c_str());
+	g_pGameRules->PlayerRespawn(static_cast<CCSPlayerPawn*>(pPlayerPawn));
 	META_CONPRINTF( "called by %lld\n", steamid);
 	sprintf(buf, " \x04 %s Ai ales:%d pattern:%d wear:%f",pPlayerController->m_iszPlayerName(),g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
 	FnUTIL_ClientPrintAll(3, buf,nullptr, nullptr, nullptr, nullptr);
@@ -317,17 +317,17 @@ const char* Skin::GetLogTag()
 
 const char* Skin::GetAuthor()
 {
-	return "宇宙遨游";
+	return "Krazy";
 }
 
 const char* Skin::GetDescription()
 {
-	return "武器皮肤插件";
+	return "Weapon skin plugin";
 }
 
 const char* Skin::GetName()
 {
-	return "武器皮肤插件";
+	return "Weapon skin plugin";
 }
 
 const char* Skin::GetURL()
