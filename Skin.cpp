@@ -133,7 +133,7 @@ bool Skin::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool lat
 
 	ConVar_Register(FCVAR_GAMEDLL);
 
-	g_WeaponsMap = { {507,"weapon_knife_karambit"},{26,"weapon_bizon"},{27,"weapon_mac10"},{34,"weapon_mp9"},{19,"weapon_p90"},{24,"weapon_ump45"},{7,"weapon_ak47"},{8,"weapon_aug"},{10,"weapon_famas"},{13,"weapon_galilar"},{16,"weapon_m4a1"},{60,"weapon_m4a1_silencer"},{39,"weapon_sg556"},{9,"weapon_awp"},{11,"weapon_g3sg1"},{38,"weapon_scar20"},{40,"weapon_ssg08"},{29,"weapon_mag7"},{35,"weapon_nova"},{29,"weapon_sawedoff"},{25,"weapon_xm1014"},{14,"weapon_m249"},{9,"weapon_awp"},{28,"weapon_negev"},{1,"weapon_deagle"},{2,"weapon_elite"},{3,"weapon_fiveseven"},{4,"weapon_glock"},{32,"weapon_hkp2000"},{36,"weapon_p250"},{30,"weapon_tec9"},{61,"weapon_usp_silencer"},{63,"weapon_cz75a"},{64,"weapon_revolver"}};
+	g_WeaponsMap = { {508,"weapon_knife_m9_bayonet"},{500,"weapon_bayonet"},{514,"weapon_knife_survival_bowie"},{515,"weapon_knife_butterfly"},{512,"weapon_knife_falchion"},{505,"weapon_knife_flip"},{506,"weapon_knife_gut"},{509,"weapon_knife_tactical"},{516,"weapon_knife_push"},{520,"weapon_knife_gypsy_jackknife"},{522,"weapon_knife_stiletto"},{523,"weapon_knife_widowmaker"},{519,"weapon_knife_ursus"},{503,"weapon_knife_css"},{517,"weapon_knife_cord"},{518,"weapon_knife_canis"},{521,"weapon_knife_outdoor"},{525,"weapon_knife_skeleton"},{507,"weapon_knife_karambit"},{26,"weapon_bizon"},{27,"weapon_mac10"},{34,"weapon_mp9"},{19,"weapon_p90"},{24,"weapon_ump45"},{7,"weapon_ak47"},{8,"weapon_aug"},{10,"weapon_famas"},{13,"weapon_galilar"},{16,"weapon_m4a1"},{60,"weapon_m4a1_silencer"},{39,"weapon_sg556"},{9,"weapon_awp"},{11,"weapon_g3sg1"},{38,"weapon_scar20"},{40,"weapon_ssg08"},{29,"weapon_mag7"},{35,"weapon_nova"},{29,"weapon_sawedoff"},{25,"weapon_xm1014"},{14,"weapon_m249"},{9,"weapon_awp"},{28,"weapon_negev"},{1,"weapon_deagle"},{2,"weapon_elite"},{3,"weapon_fiveseven"},{4,"weapon_glock"},{32,"weapon_hkp2000"},{36,"weapon_p250"},{30,"weapon_tec9"},{61,"weapon_usp_silencer"},{63,"weapon_cz75a"},{64,"weapon_revolver"}};
 	#ifdef _WIN32	
 	byte* vscript = (byte*)FindSignature("vscript.dll", "\xBE\x01\x3F\x3F\x3F\x2B\xD6\x74\x61\x3B\xD6");
 	if(vscript)
@@ -325,11 +325,79 @@ CON_COMMAND_F(knife, "Gives the player a knife", FCVAR_CLIENT_CAN_EXECUTE)
     // Give the player the knife
     if (strcmp(args.Arg(1), "m9") == 0)
     {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_m9", nullptr, nullptr, nullptr, nullptr);
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_m9_bayonet", nullptr, nullptr, nullptr, nullptr);
     }
     else if (strcmp(args.Arg(1), "karambit") == 0)
     {
         FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_karambit", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "bayonet") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_bayonet", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "bowie") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_survival_bowie", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "butterfly") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_butterfly", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "falchion") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_falchion", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "flip") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_flip", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "gut") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_gut", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "tactical") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_tactical", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "shadow") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_push", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "navaja") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_gypsy_jackknife", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "stiletto") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_stiletto", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "talon") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_widowmaker", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "ursus") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_ursus", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "css") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_css", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "paracord") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_cord", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "survival") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_canis", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "nomad") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_outdoor", nullptr, nullptr, nullptr, nullptr);
+    }
+	else if (strcmp(args.Arg(1), "skeleton") == 0)
+    {
+        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_skeleton", nullptr, nullptr, nullptr, nullptr);
     }
     else
     {
