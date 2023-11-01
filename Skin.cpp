@@ -283,6 +283,15 @@ CON_COMMAND_F(skin, "Change Skin", FCVAR_CLIENT_CAN_EXECUTE)
 	g_PlayerSkins[steamid][weaponId].m_flFallbackWear = atof(args.Arg(3));
 	CBasePlayerWeapon* pPlayerWeapon = pWeaponServices->m_hActiveWeapon();
 
+	pBasePlayerWeapon->m_AttributeManager().m_Item().m_iItemIDHigh() = -1;
+
+	 CGameSceneNode* pWeaponSceneNode = pBasePlayerWeapon->m_pGameSceneNode();
+    if (pWeaponSceneNode) {
+        auto paintKit = interfaces::pClient->GetEconItemSystem()->GetEconItemSchema()->GetPaintKits().FindByKey(weaponId); // Replace 'weaponId' with the actual item ID for the skin
+        const bool usesOldModel = paintKit.has_value() && paintKit.value()->UsesLegacyModel();
+        pWeaponSceneNode->SetMeshGroupMask(1 + usesOldModel);
+    }
+
 	pWeaponServices->RemoveWeapon(pPlayerWeapon);
 	FnEntityRemove(g_pGameEntitySystem,pPlayerWeapon,nullptr,-1);
 	FnGiveNamedItem(pPlayerPawn->m_pItemServices(),weapon_name->second.c_str(),nullptr,nullptr,nullptr,nullptr);
