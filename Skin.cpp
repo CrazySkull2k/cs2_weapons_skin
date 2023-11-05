@@ -39,26 +39,35 @@ typedef struct SkinParm
 	int m_nFallbackPaintKit;
 	int m_nFallbackSeed;
 	float m_flFallbackWear;
-}SkinParm;;
+}SkinParm;
 
 #ifdef _WIN32
+typedef void*(FASTCALL* SubClassChange_t)(const CCommandContext &context, const CCommand &args);
 typedef void*(FASTCALL* EntityRemove_t)(CGameEntitySystem*, void*, void*,uint64_t);
 typedef void(FASTCALL* GiveNamedItem_t)(void* itemService,const char* pchName, void* iSubType,void* pScriptItem, void* a5,void* a6);
 typedef void(FASTCALL* UTIL_ClientPrintAll_t)(int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4);
+typedef void(FASTCALL* UTIL_ClientPrint_t)(CBasePlayerController *player, int msg_dest, const char *msg_name, const char *param1, const char *param2, const char *param3, const char *param4);
 
+extern SubClassChange_t FnSubClassChange;
 extern EntityRemove_t FnEntityRemove;
 extern GiveNamedItem_t FnGiveNamedItem;
 extern UTIL_ClientPrintAll_t FnUTIL_ClientPrintAll;
+extern UTIL_ClientPrint_t FnUTIL_ClientPrint;
 EntityRemove_t FnEntityRemove;
 GiveNamedItem_t FnGiveNamedItem;
 UTIL_ClientPrintAll_t FnUTIL_ClientPrintAll;
+UTIL_ClientPrint_t FnUTIL_ClientPrint;
+SubClassChange_t FnSubClassChange;
 #else
+void (*FnSubClassChange)(const CCommandContext &context, const CCommand &args) = nullptr;
 void (*FnEntityRemove)(CGameEntitySystem*, void*, void*,uint64_t) = nullptr;
 void (*FnGiveNamedItem)(void* itemService,const char* pchName, void* iSubType,void* pScriptItem, void* a5,void* a6) = nullptr;
 void (*FnUTIL_ClientPrintAll)(int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4) = nullptr;
+void (*FnUTIL_ClientPrint)(CBasePlayerController *player, int msg_dest, const char *msg_name, const char *param1, const char *param2, const char *param3, const char *param4) = nullptr;
 #endif
 
 std::map<int, std::string> g_WeaponsMap;
+std::map<uint64_t, int> g_PlayerKnifes;
 std::map<uint64_t, std::map<int, SkinParm>> g_PlayerSkins;
 
 class GameSessionConfiguration_t { };
@@ -133,7 +142,8 @@ bool Skin::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool lat
 
 	ConVar_Register(FCVAR_GAMEDLL);
 
-	g_WeaponsMap = { {42,"weapon_knife"},{59,"weapon_knife_t"},{31,"weapon_taser"},{31,"weapon_taser"},{526,"weapon_knife_kukri"},{508,"weapon_knife_m9_bayonet"},{500,"weapon_bayonet"},{514,"weapon_knife_survival_bowie"},{515,"weapon_knife_butterfly"},{512,"weapon_knife_falchion"},{505,"weapon_knife_flip"},{506,"weapon_knife_gut"},{509,"weapon_knife_tactical"},{516,"weapon_knife_push"},{520,"weapon_knife_gypsy_jackknife"},{522,"weapon_knife_stiletto"},{523,"weapon_knife_widowmaker"},{519,"weapon_knife_ursus"},{503,"weapon_knife_css"},{517,"weapon_knife_cord"},{518,"weapon_knife_canis"},{521,"weapon_knife_outdoor"},{525,"weapon_knife_skeleton"},{507,"weapon_knife_karambit"},{26,"weapon_bizon"},{27,"weapon_mac10"},{34,"weapon_mp9"},{19,"weapon_p90"},{24,"weapon_ump45"},{7,"weapon_ak47"},{8,"weapon_aug"},{10,"weapon_famas"},{13,"weapon_galilar"},{16,"weapon_m4a1"},{60,"weapon_m4a1_silencer"},{39,"weapon_sg556"},{9,"weapon_awp"},{11,"weapon_g3sg1"},{38,"weapon_scar20"},{40,"weapon_ssg08"},{29,"weapon_mag7"},{35,"weapon_nova"},{29,"weapon_sawedoff"},{25,"weapon_xm1014"},{14,"weapon_m249"},{9,"weapon_awp"},{28,"weapon_negev"},{1,"weapon_deagle"},{2,"weapon_elite"},{3,"weapon_fiveseven"},{4,"weapon_glock"},{32,"weapon_hkp2000"},{36,"weapon_p250"},{30,"weapon_tec9"},{61,"weapon_usp_silencer"},{63,"weapon_cz75a"},{64,"weapon_revolver"}};
+	g_WeaponsMap = {{59,"weapon_knife"},{42,"weapon_knife"},{26,"weapon_bizon"},{27,"weapon_mac10"},{34,"weapon_mp9"},{19,"weapon_p90"},{24,"weapon_ump45"},{7,"weapon_ak47"},{8,"weapon_aug"},{10,"weapon_famas"},{13,"weapon_galilar"},{16,"weapon_m4a1"},{60,"weapon_m4a1_silencer"},{39,"weapon_sg556"},{9,"weapon_awp"},{11,"weapon_g3sg1"},{38,"weapon_scar20"},{40,"weapon_ssg08"},{29,"weapon_mag7"},{35,"weapon_nova"},{29,"weapon_sawedoff"},{25,"weapon_xm1014"},{14,"weapon_m249"},{9,"weapon_awp"},{28,"weapon_negev"},{1,"weapon_deagle"},{2,"weapon_elite"},{3,"weapon_fiveseven"},{4,"weapon_glock"},{32,"weapon_hkp2000"},{36,"weapon_p250"},{30,"weapon_tec9"},{61,"weapon_usp_silencer"},{63,"weapon_cz75a"},{64,"weapon_revolver"}};
+		
 	#ifdef _WIN32	
 	byte* vscript = (byte*)FindSignature("vscript.dll", "\xBE\x01\x3F\x3F\x3F\x2B\xD6\x74\x61\x3B\xD6");
 	if(vscript)
@@ -170,14 +180,18 @@ void Skin::NextFrame(std::function<void()> fn)
 void Skin::StartupServer(const GameSessionConfiguration_t& config, ISource2WorldSession*, const char*)
 {
 	#ifdef _WIN32
+	FnUTIL_ClientPrint = (UTIL_ClientPrint_t)FindSignature("server.dll", "\x48\x85\xC9\x0F\x84\x3F\x3F\x3F\x3F\x48\x8B\xC4\x48\x89\x58\x18");
 	FnUTIL_ClientPrintAll = (UTIL_ClientPrintAll_t)FindSignature("server.dll", "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x81\xEC\x70\x01\x3F\x3F\x8B\xE9");
 	FnGiveNamedItem = (GiveNamedItem_t)FindSignature("server.dll", "\x48\x89\x5C\x24\x18\x48\x89\x74\x24\x20\x55\x57\x41\x54\x41\x56\x41\x57\x48\x8D\x6C\x24\xD9");
 	FnEntityRemove = (EntityRemove_t)FindSignature("server.dll", "\x48\x85\xD2\x0F\x3F\x3F\x3F\x3F\x3F\x57\x48\x3F\x3F\x3F\x48\x89\x3F\x3F\x3F\x48\x8B\xF9\x48\x8B");
+	FnSubClassChange = (SubClassChange_t)FindSignature("server.dll", "\x40\x55\x41\x57\x48\x83\xEC\x78\x83\xBA\x38\x04");
 	#else
 	CModule libserver(g_pSource2Server);
+	FnUTIL_ClientPrint = libserver.FindPatternSIMD("55 48 89 E5 41 57 49 89 CF 41 56 49 89 D6 41 55 41 89 F5 41 54 4C 8D A5 A0 FE FF FF").RCast< decltype(FnUTIL_ClientPrint) >();
 	FnUTIL_ClientPrintAll = libserver.FindPatternSIMD("55 48 89 E5 41 57 49 89 D7 41 56 49 89 F6 41 55 41 89 FD").RCast< decltype(FnUTIL_ClientPrintAll) >();
 	FnGiveNamedItem = libserver.FindPatternSIMD("55 48 89 E5 41 57 41 56 49 89 CE 41 55 49 89 F5 41 54 49 89 D4 53 48 89").RCast<decltype(FnGiveNamedItem)>();
 	FnEntityRemove = libserver.FindPatternSIMD("48 85 F6 74 0B 48 8B 76 10 E9 B2 FE FF FF").RCast<decltype(FnEntityRemove)>();
+	FnSubClassChange = libserver.FindPatternSIMD("55 48 89 E5 41 57 41 56 41 55 41 54 53 48 81 EC C8 00 00 00 83 BE 38 04 00 00 01 0F 8E 47 02").RCast<decltype(FnSubClassChange)>();
 	#endif
 	g_pGameRules = nullptr;
 
@@ -234,7 +248,8 @@ void CRoundPreStartEvent::FireGameEvent(IGameEvent* event)
 void CEntityListener::OnEntitySpawned(CEntityInstance* pEntity)
 {
 	CBasePlayerWeapon* pBasePlayerWeapon = dynamic_cast<CBasePlayerWeapon*>(pEntity);
-	if(!pBasePlayerWeapon)return;
+	if(!pBasePlayerWeapon)return;	
+
 	g_Skin.NextFrame([pBasePlayerWeapon = pBasePlayerWeapon]()
 	{
 		int64_t steamid = pBasePlayerWeapon->m_OriginalOwnerXuidLow();
@@ -245,31 +260,41 @@ void CEntityListener::OnEntitySpawned(CEntityInstance* pEntity)
 		if(weapon == g_PlayerSkins.end())return;
 		auto skin_parm = weapon->second.find(weaponId);
 		if(skin_parm == weapon->second.end())return;
-		
+
 		pBasePlayerWeapon->m_nFallbackPaintKit() = skin_parm->second.m_nFallbackPaintKit;
 		pBasePlayerWeapon->m_nFallbackSeed() = skin_parm->second.m_nFallbackSeed;
 		pBasePlayerWeapon->m_flFallbackWear() = skin_parm->second.m_flFallbackWear;
-
 		pBasePlayerWeapon->m_AttributeManager().m_Item().m_iItemIDHigh() = -1;
+
+		if(pBasePlayerWeapon->m_CBodyComponent() && pBasePlayerWeapon->m_CBodyComponent()->m_pSceneNode())
+		{
+			pBasePlayerWeapon->m_CBodyComponent()->m_pSceneNode()->GetSkeletonInstance()->m_modelState().m_MeshGroupMask() = 2;
+		}
+		
+		if(weaponId == 59 || weaponId == 42)
+		{
+			auto knife_idx = g_PlayerKnifes.find(steamid);
+			if(knife_idx == g_PlayerKnifes.end())return;
+			
+			char buf[64] = {0};
+			int index = static_cast<CEntityInstance*>(pBasePlayerWeapon)->m_pEntity->m_EHandle.GetEntryIndex();
+			sprintf(buf,"i_subclass_change %d %d",knife_idx->second,index);
+			engine->ServerCommand(buf);
+		}
+		
+		//META_CONPRINTF( "class: %s\n", static_cast<CEntityInstance*>(pBasePlayerWeapon)->m_pEntity->m_designerName.String());
 		META_CONPRINTF( "steamId: %lld itemId: %d\n", steamid, weaponId);
 	});
 }
 
-CON_COMMAND_F(skin, "Change Skin", FCVAR_CLIENT_CAN_EXECUTE)
+CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 {
 	if(context.GetPlayerSlot() == -1)return;
 	CCSPlayerController* pPlayerController = (CCSPlayerController*)g_pEntitySystem->GetBaseEntity((CEntityIndex)(context.GetPlayerSlot().Get() + 1));
 	CCSPlayerPawnBase* pPlayerPawn = pPlayerController->m_hPlayerPawn();
 	if (!pPlayerPawn || pPlayerPawn->m_lifeState() != LIFE_ALIVE)
 		return;
-	char buf[255] = {0};
-	if(args.ArgC() != 4)
-	{
-		sprintf(buf, " \x04 %s Ai nevoie de 3 parametrii pentru a schimba skinul!",pPlayerController->m_iszPlayerName());
-		FnUTIL_ClientPrintAll(3, buf,nullptr, nullptr, nullptr, nullptr);
-		return;
-	}
-
+	
 	CPlayer_WeaponServices* pWeaponServices = pPlayerPawn->m_pWeaponServices();
 
 	int64_t steamid = pPlayerController->m_steamID();
@@ -277,150 +302,54 @@ CON_COMMAND_F(skin, "Change Skin", FCVAR_CLIENT_CAN_EXECUTE)
 	
 	auto weapon_name = g_WeaponsMap.find(weaponId);
 	if(weapon_name == g_WeaponsMap.end())return;
+	
+	if(args.ArgC() == 1)
+	{
+		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01访问：http://skin.ymos.top/ 生成皮肤修改参数",nullptr, nullptr, nullptr, nullptr);
+		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01开源仓库：https://github.com/yuzhouUvU/cs2_weapons_skin",nullptr, nullptr, nullptr, nullptr);
+		return;
+	}
+	char buf[255] = {0};
+	if(weaponId == 59 || weaponId == 42)
+	{
+		if(args.ArgC() != 5)
+		{
+			sprintf(buf, " \x04 [SKIN] \x01%s 你使用skin命令修改刀皮肤需要四个参数!",pPlayerController->m_iszPlayerName());
+			FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
+			return;
+		}
+		g_PlayerKnifes[steamid] = atoi(args.Arg(4));
+	}
+	else
+	{
+		if(args.ArgC() != 4)
+		{
+			sprintf(buf, " \x04 [SKIN] \x01%s 你使用skin命令修改武器皮肤需要三个参数!",pPlayerController->m_iszPlayerName());
+			FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
+			return;
+		}
+	}
 
 	g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit = atoi(args.Arg(1));
 	g_PlayerSkins[steamid][weaponId].m_nFallbackSeed = atoi(args.Arg(2));
 	g_PlayerSkins[steamid][weaponId].m_flFallbackWear = atof(args.Arg(3));
 	CBasePlayerWeapon* pPlayerWeapon = pWeaponServices->m_hActiveWeapon();
 
-	 pPlayerWeapon->m_AttributeManager().m_Item().m_iItemIDHigh() = -1;
-
-	 g_pGameEntitySystem* CBasePlayerWeapon = pPlayerWeapon->m_hActiveWeapon();
-    if (CBasePlayerWeapon) {
-        auto paintKit = interfaces::pClient->GetEconItemSystem()->GetEconItemSchema()->GetPaintKits().FindByKey(weaponId); // Replace 'weaponId' with the actual item ID for the skin
-        const bool usesOldModel = paintKit.has_value() && paintKit.value()->UsesLegacyModel();
-        CBasePlayerWeapon->SetMeshGroupMask(1 + usesOldModel);
-    }
-
 	pWeaponServices->RemoveWeapon(pPlayerWeapon);
 	FnEntityRemove(g_pGameEntitySystem,pPlayerWeapon,nullptr,-1);
 	FnGiveNamedItem(pPlayerPawn->m_pItemServices(),weapon_name->second.c_str(),nullptr,nullptr,nullptr,nullptr);
-	pPlayerWeapon->m_AttributeManager().m_Item().m_iAccountID() = 271098320;
-	CCSPlayer_ItemServices* pItemServices = static_cast<CCSPlayer_ItemServices*>(pPlayerPawn->m_pItemServices());
-	pItemServices->GiveNamedItem(weapon_name->second.c_str());
-	g_pGameRules->PlayerRespawn(static_cast<CCSPlayerPawn*>(pPlayerPawn));
-	META_CONPRINTF( "called by %lld\n", steamid);
-	sprintf(buf, " \x04 %s Ai ales:%d pattern:%d wear:%f",pPlayerController->m_iszPlayerName(),g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
-	FnUTIL_ClientPrintAll(3, buf,nullptr, nullptr, nullptr, nullptr);
+	// pPlayerWeapon->m_AttributeManager().m_Item().m_iAccountID() = 271098320;
+	//CCSPlayer_ItemServices* pItemServices = static_cast<CCSPlayer_ItemServices*>(pPlayerPawn->m_pItemServices());
+	//pItemServices->GiveNamedItem(weapon_name->second.c_str());
+	// g_pGameRules->PlayerRespawn(static_cast<CCSPlayerPawn*>(pPlayerPawn));
+	//META_CONPRINTF( "called by %lld\n", steamid);
+	sprintf(buf, " \x04 [SKIN] \x01已修改皮肤 编号:%d 模板:%d 磨损:%f",g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
+	FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 }
 
-CON_COMMAND_F(knife, "Gives the player a knife", FCVAR_CLIENT_CAN_EXECUTE)
+CON_COMMAND_F(i_subclass_change, "subclass change", FCVAR_NONE)
 {
-    if (context.GetPlayerSlot() == -1) return;
-    CCSPlayerController* pPlayerController = (CCSPlayerController*)g_pEntitySystem->GetBaseEntity((CEntityIndex)(context.GetPlayerSlot().Get() + 1));
-    CCSPlayerPawnBase* pPlayerPawn = pPlayerController->m_hPlayerPawn();
-    if (!pPlayerPawn || pPlayerPawn->m_lifeState() != LIFE_ALIVE)
-        return;
-    char buf[255] = { 0 };
-    if (args.ArgC() != 2)
-    {
-        sprintf(buf, " \x04 %s You need to specify a knife type (m9 or karambit) to use the giveknife command!", pPlayerController->m_iszPlayerName());
-        FnUTIL_ClientPrintAll(3, buf, nullptr, nullptr, nullptr, nullptr);
-        return;
-    }
-
-    CPlayer_WeaponServices* pWeaponServices = pPlayerPawn->m_pWeaponServices();
-    CBasePlayerWeapon* pPlayerWeapon = pWeaponServices->m_hActiveWeapon();
-
-    int64_t steamid = pPlayerController->m_steamID();
-
-    // Remove the player's current weapon
-    if (pPlayerWeapon)
-    {
-        pWeaponServices->RemoveWeapon(pPlayerWeapon);
-        FnEntityRemove(g_pGameEntitySystem, pPlayerWeapon, nullptr, -1);
-    }
-
-    // Give the player the knife
-    if (strcmp(args.Arg(1), "m9") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_m9_bayonet", nullptr, nullptr, nullptr, nullptr);
-    }
-    else if (strcmp(args.Arg(1), "karambit") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_karambit", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "bayonet") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_bayonet", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "bowie") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_survival_bowie", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "butterfly") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_butterfly", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "falchion") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_falchion", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "flip") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_flip", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "gut") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_gut", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "huntsman") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_tactical", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "shadow") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_push", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "navaja") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_gypsy_jackknife", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "stiletto") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_stiletto", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "talon") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_widowmaker", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "ursus") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_ursus", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "css") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_css", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "paracord") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_cord", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "survival") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_canis", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "nomad") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_outdoor", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "skeleton") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_skeleton", nullptr, nullptr, nullptr, nullptr);
-    }
-	else if (strcmp(args.Arg(1), "kukri") == 0)
-    {
-        FnGiveNamedItem(pPlayerPawn->m_pItemServices(), "weapon_knife_kukri", nullptr, nullptr, nullptr, nullptr);
-    }
-    else
-    {
-        sprintf(buf, " \x04 %s Invalid knife type specified!", pPlayerController->m_iszPlayerName());
-        FnUTIL_ClientPrintAll(3, buf, nullptr, nullptr, nullptr, nullptr);
-        return;
-    }
-
-    sprintf(buf, " \x04 %s has been given a %s knife!", pPlayerController->m_iszPlayerName(), args.Arg(1));
-    FnUTIL_ClientPrintAll(3, buf, nullptr, nullptr, nullptr, nullptr);
+	FnSubClassChange(context,args);
 }
 
 const char* Skin::GetLicense()
@@ -445,17 +374,17 @@ const char* Skin::GetLogTag()
 
 const char* Skin::GetAuthor()
 {
-	return "Krazy";
+	return "宇宙遨游";
 }
 
 const char* Skin::GetDescription()
 {
-	return "Weapon skin plugin";
+	return "武器皮肤插件";
 }
 
 const char* Skin::GetName()
 {
-	return "Weapon skin plugin";
+	return "武器皮肤插件";
 }
 
 const char* Skin::GetURL()

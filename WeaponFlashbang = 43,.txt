@@ -1,0 +1,7 @@
+    WeaponFlashbang = 43,
+    WeaponHegrenade = 44,
+    WeaponSmokegrenade = 45,
+    WeaponMolotov = 46,
+    WeaponDecoy = 47,
+    WeaponIncgrenade = 48,
+    WeaponC4 = 49,
