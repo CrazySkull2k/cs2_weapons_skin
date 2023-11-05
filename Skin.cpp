@@ -66,6 +66,8 @@ void (*FnUTIL_ClientPrintAll)(int msg_dest, const char* msg_name, const char* pa
 void (*FnUTIL_ClientPrint)(CBasePlayerController *player, int msg_dest, const char *msg_name, const char *param1, const char *param2, const char *param3, const char *param4) = nullptr;
 #endif
 
+#define CON_COMMAND_CHAT(name, description)
+
 std::map<int, std::string> g_WeaponsMap;
 std::map<uint64_t, int> g_PlayerKnifes;
 std::map<uint64_t, std::map<int, SkinParm>> g_PlayerSkins;
@@ -287,7 +289,7 @@ void CEntityListener::OnEntitySpawned(CEntityInstance* pEntity)
 	});
 }
 
-CON_COMMAND_CHAT(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
+CON_COMMAND_CHAT(skin, "修改皮肤")
 {
 	if(context.GetPlayerSlot() == -1)return;
 	CCSPlayerController* pPlayerController = (CCSPlayerController*)g_pEntitySystem->GetBaseEntity((CEntityIndex)(context.GetPlayerSlot().Get() + 1));
@@ -347,7 +349,7 @@ CON_COMMAND_CHAT(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 	FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 }
 
-CON_COMMAND_CHAT(i_subclass_change, "subclass change", FCVAR_NONE)
+CON_COMMAND_CHAT(i_subclass_change, "subclass change")
 {
 	FnSubClassChange(context,args);
 }
@@ -392,20 +394,3 @@ const char* Skin::GetURL()
 	return "http://cs2.wssr.top";
 }
 
-#define CON_COMMAND_CHAT_FLAGS(name, description, flags)																								\
-	void name##_callback(const CCommand &args, CCSPlayerController *player);																			\
-	static CChatCommand name##_chat_command(#name, name##_callback, flags);																				\
-	static void name##_con_callback(const CCommandContext &context, const CCommand &args)																\
-	{																																					\
-		CCSPlayerController *pController = nullptr;																										\
-		if (context.GetPlayerSlot().Get() != -1)																										\
-			pController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(context.GetPlayerSlot().Get() + 1));						\
-																																						\
-		name##_chat_command(args, pController);																											\
-	}																																					\
-	static ConCommandRefAbstract name##_ref;																											\
-	static ConCommand name##_command(&name##_ref, COMMAND_PREFIX #name, name##_con_callback,															\
-									description, FCVAR_CLIENT_CAN_EXECUTE | FCVAR_LINKED_CONCOMMAND);													\
-	void name##_callback(const CCommand &args, CCSPlayerController *player)
-
-#define CON_COMMAND_CHAT(name, description) CON_COMMAND_CHAT_FLAGS(name, description, ADMFLAG_NONE)
