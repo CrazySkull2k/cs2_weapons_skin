@@ -64,4 +64,6 @@ class CEntityListener : public IEntityListener
 	void OnEntitySpawned(CEntityInstance* pEntity) override;
 };
 
+#define CON_COMMAND_CHAT(name, description)
+
 #endif //_INCLUDE_METAMOD_SOURCE_STUB_PLUGIN_H_

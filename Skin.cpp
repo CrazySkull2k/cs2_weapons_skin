@@ -66,8 +66,6 @@ void (*FnUTIL_ClientPrintAll)(int msg_dest, const char* msg_name, const char* pa
 void (*FnUTIL_ClientPrint)(CBasePlayerController *player, int msg_dest, const char *msg_name, const char *param1, const char *param2, const char *param3, const char *param4) = nullptr;
 #endif
 
-#define CON_COMMAND_CHAT(name, description)
-
 std::map<int, std::string> g_WeaponsMap;
 std::map<uint64_t, int> g_PlayerKnifes;
 std::map<uint64_t, std::map<int, SkinParm>> g_PlayerSkins;
