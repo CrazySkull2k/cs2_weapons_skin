@@ -287,7 +287,7 @@ void CEntityListener::OnEntitySpawned(CEntityInstance* pEntity)
 	});
 }
 
-CON_COMMAND_CHAT(skin, "修改皮肤")
+CON_COMMAND_CHAT(skin, "Change Skin")
 {
 	if(context.GetPlayerSlot() == -1)return;
 	CCSPlayerController* pPlayerController = (CCSPlayerController*)g_pEntitySystem->GetBaseEntity((CEntityIndex)(context.GetPlayerSlot().Get() + 1));
@@ -305,8 +305,7 @@ CON_COMMAND_CHAT(skin, "修改皮肤")
 	
 	if(args.ArgC() == 1)
 	{
-		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01访问：http://skin.ymos.top/ 生成皮肤修改参数",nullptr, nullptr, nullptr, nullptr);
-		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01开源仓库：https://github.com/yuzhouUvU/cs2_weapons_skin",nullptr, nullptr, nullptr, nullptr);
+		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN]\x01 Acceseaza https://tequilagg.ro pentru a genera comenzi pentru skinuri!",nullptr, nullptr, nullptr, nullptr);
 		return;
 	}
 	char buf[255] = {0};
@@ -314,7 +313,7 @@ CON_COMMAND_CHAT(skin, "修改皮肤")
 	{
 		if(args.ArgC() != 5)
 		{
-			sprintf(buf, " \x04 [SKIN] \x01%s 你使用skin命令修改刀皮肤需要四个参数!",pPlayerController->m_iszPlayerName());
+			sprintf(buf, " \x04 [SKIN] \x01%s Ai nevoie de 4 parametrii pentru a modifica cutitul!",pPlayerController->m_iszPlayerName());
 			FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 			return;
 		}
@@ -324,7 +323,7 @@ CON_COMMAND_CHAT(skin, "修改皮肤")
 	{
 		if(args.ArgC() != 4)
 		{
-			sprintf(buf, " \x04 [SKIN] \x01%s 你使用skin命令修改武器皮肤需要三个参数!",pPlayerController->m_iszPlayerName());
+			sprintf(buf, " \x04 [SKIN] \x01%s Ai nevoie de 3 parametrii pentru a schimba skinul!",pPlayerController->m_iszPlayerName());
 			FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 			return;
 		}
@@ -343,7 +342,7 @@ CON_COMMAND_CHAT(skin, "修改皮肤")
 	//pItemServices->GiveNamedItem(weapon_name->second.c_str());
 	// g_pGameRules->PlayerRespawn(static_cast<CCSPlayerPawn*>(pPlayerPawn));
 	//META_CONPRINTF( "called by %lld\n", steamid);
-	sprintf(buf, " \x04 [SKIN] \x01已修改皮肤 编号:%d 模板:%d 磨损:%f",g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
+	sprintf(buf, " \x04 [SKIN] \x01Skin ales:%d Pattern:%d Wear:%f",g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
 	FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 }
 
@@ -374,21 +373,21 @@ const char* Skin::GetLogTag()
 
 const char* Skin::GetAuthor()
 {
-	return "宇宙遨游";
+	return "Krazy";
 }
 
 const char* Skin::GetDescription()
 {
-	return "武器皮肤插件";
+	return "Skinchooser";
 }
 
 const char* Skin::GetName()
 {
-	return "武器皮肤插件";
+	return "!WS 2";
 }
 
 const char* Skin::GetURL()
 {
-	return "http://cs2.wssr.top";
+	return "https://tequilagg.ro";
 }
 
