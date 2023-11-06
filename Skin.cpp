@@ -322,7 +322,7 @@ void CEntityListener::OnEntitySpawned(CEntityInstance* pEntity)
 	#endif
 }
 
-CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
+CON_COMMAND_F(skin, "Change Skin", FCVAR_CLIENT_CAN_EXECUTE)
 {
 	if(context.GetPlayerSlot() == -1)return;
 	CCSPlayerController* pPlayerController = (CCSPlayerController*)g_pEntitySystem->GetBaseEntity((CEntityIndex)(context.GetPlayerSlot().Get() + 1));
@@ -340,8 +340,8 @@ CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 	
 	if(args.ArgC() == 1)
 	{
-		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01访问：http://skin.ymos.top/ 生成皮肤修改参数",nullptr, nullptr, nullptr, nullptr);
-		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01开源仓库：https://github.com/yuzhouUvU/cs2_weapons_skin",nullptr, nullptr, nullptr, nullptr);
+		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01 Acceseaza：http://tequilagg.ro/ pentru a genera comenzi pentru skinuri",nullptr, nullptr, nullptr, nullptr);
+
 		return;
 	}
 	char buf[255] = {0};
@@ -349,7 +349,7 @@ CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 	{
 		if(args.ArgC() != 5)
 		{
-			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01修改刀具控制台输入 'skin 编号 模板 磨损 刀具编号'",nullptr, nullptr, nullptr, nullptr);
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01Pentru a schimba cutitul, scrie 'skin *id* *pattern* *float* *knife_id*'",nullptr, nullptr, nullptr, nullptr);
 			return;
 		}
 		g_PlayerKnifes[steamid] = atoi(args.Arg(4));
@@ -358,8 +358,8 @@ CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 	{
 		if(args.ArgC() != 4 && args.ArgC() != 6)
 		{
-			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01修改武器皮肤控制台输入 'skin 编号 模板 磨损'",nullptr, nullptr, nullptr, nullptr);
-			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01添加武器贴纸控制台输入 'skin 编号 模板 磨损 贴纸编号 位置(0-5)'",nullptr, nullptr, nullptr, nullptr);
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01Pentru a schimba skinul, scrie 'skin *id* *pattern* *float*'",nullptr, nullptr, nullptr, nullptr);
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01Pentru a aplica stickere, scrie 'skin *id* *pattern* *float* *sticker_id* *position*'",nullptr, nullptr, nullptr, nullptr);
 			return;
 		}
 	}
@@ -370,7 +370,7 @@ CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 		int pos = atoi(args.Arg(5));
 		if(pos > 5 || pos < 0)
 		{
-			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01位置请输入(0-5)之间的数字 ",nullptr, nullptr, nullptr, nullptr);
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01Alege un numar (0-5) pentru pozitie",nullptr, nullptr, nullptr, nullptr);
 			return;
 		}
 		switch (pos)
@@ -397,7 +397,7 @@ CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 			break;
 		}
 
-		sprintf(buf, " \x04 [SKIN] \x01已修改贴纸 贴纸编号:%d 位置:%d",g_Sticker[steamid][weaponId].sticker_id, pos);
+		sprintf(buf, " \x04 [SKIN] \x01Aplicat sticker:%d pozitie:%d",g_Sticker[steamid][weaponId].sticker_id, pos);
 		FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 	}
 
@@ -414,7 +414,7 @@ CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 	//pItemServices->GiveNamedItem(weapon_name->second.c_str());
 	// g_pGameRules->PlayerRespawn(static_cast<CCSPlayerPawn*>(pPlayerPawn));
 	//META_CONPRINTF( "called by %lld\n", steamid);
-	sprintf(buf, " \x04 [SKIN] \x01已修改皮肤 编号:%d 模板:%d 磨损:%f",g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
+	sprintf(buf, " \x04 [SKIN] \x01Ai ales skin:%d pattern:%d float:%f",g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
 	FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 }
 
@@ -445,20 +445,20 @@ const char* Skin::GetLogTag()
 
 const char* Skin::GetAuthor()
 {
-	return "宇宙遨游";
+	return "Krazy";
 }
 
 const char* Skin::GetDescription()
 {
-	return "武器皮肤插件";
+	return "Skin Changer";
 }
 
 const char* Skin::GetName()
 {
-	return "武器皮肤插件";
+	return "WS 2";
 }
 
 const char* Skin::GetURL()
 {
-	return "http://cs2.wssr.top";
+	return "http://tequilagg.ro";
 }
