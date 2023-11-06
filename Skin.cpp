@@ -41,6 +41,12 @@ typedef struct SkinParm
 	float m_flFallbackWear;
 }SkinParm;
 
+typedef struct Sticker
+{
+	int sticker_id;
+	int sticker_pos;
+}Sticker;
+
 #ifdef _WIN32
 typedef void*(FASTCALL* SubClassChange_t)(const CCommandContext &context, const CCommand &args);
 typedef void*(FASTCALL* EntityRemove_t)(CGameEntitySystem*, void*, void*,uint64_t);
@@ -69,6 +75,7 @@ void (*FnUTIL_ClientPrint)(CBasePlayerController *player, int msg_dest, const ch
 std::map<int, std::string> g_WeaponsMap;
 std::map<uint64_t, int> g_PlayerKnifes;
 std::map<uint64_t, std::map<int, SkinParm>> g_PlayerSkins;
+std::map<uint64_t, std::map<int, Sticker>> g_Sticker;
 
 class GameSessionConfiguration_t { };
 SH_DECL_HOOK3_void(INetworkServerService, StartupServer, SH_NOATTRIB, 0, const GameSessionConfiguration_t&, ISource2WorldSession*, const char*);
@@ -235,6 +242,16 @@ void CPlayerSpawnEvent::FireGameEvent(IGameEvent* event)
 	CBasePlayerController* pPlayerController = static_cast<CBasePlayerController*>(event->GetPlayerController("userid"));
 	if (!pPlayerController || pPlayerController->m_steamID() == 0) // Ignore bots
 		return;
+	// g_Skin.NextFrame([hPlayerController = CHandle<CBasePlayerController>(pPlayerController)]()
+	// {
+	// 	CCSPlayerController* pPlayerController = static_cast<CCSPlayerController*>(hPlayerController.Get());
+	// 	if (!pPlayerController)
+	// 		return;
+
+	// 	CCSPlayerPawn* pPlayerPawn = pPlayerController->m_hPlayerPawn();
+	// 	if (!pPlayerPawn || pPlayerPawn->m_lifeState() != LIFE_ALIVE)
+	// 		return;
+	// });
 }
 
 void CRoundPreStartEvent::FireGameEvent(IGameEvent* event)
@@ -247,51 +264,69 @@ void CRoundPreStartEvent::FireGameEvent(IGameEvent* event)
 
 void CEntityListener::OnEntitySpawned(CEntityInstance* pEntity)
 {
-	CBasePlayerWeapon* pBasePlayerWeapon = dynamic_cast<CBasePlayerWeapon*>(pEntity);
-	if(!pBasePlayerWeapon)return;	
-
-	g_Skin.NextFrame([pBasePlayerWeapon = pBasePlayerWeapon]()
+	#ifdef _WIN32
+	try
 	{
-		int64_t steamid = pBasePlayerWeapon->m_OriginalOwnerXuidLow();
-		if(!steamid)return;
-		int64_t weaponId = pBasePlayerWeapon->m_AttributeManager().m_Item().m_iItemDefinitionIndex();
+	#endif
+		CBasePlayerWeapon* pBasePlayerWeapon = dynamic_cast<CBasePlayerWeapon*>(pEntity);
+		if(!pBasePlayerWeapon)return;	
 
-		auto weapon = g_PlayerSkins.find(steamid);
-		if(weapon == g_PlayerSkins.end())return;
-		auto skin_parm = weapon->second.find(weaponId);
-		if(skin_parm == weapon->second.end())return;
-
-		pBasePlayerWeapon->m_nFallbackPaintKit() = skin_parm->second.m_nFallbackPaintKit;
-		pBasePlayerWeapon->m_nFallbackSeed() = skin_parm->second.m_nFallbackSeed;
-		pBasePlayerWeapon->m_flFallbackWear() = skin_parm->second.m_flFallbackWear;
-		pBasePlayerWeapon->m_AttributeManager().m_Item().m_iItemIDHigh() = -1;
-
-		if(pBasePlayerWeapon->m_CBodyComponent() && pBasePlayerWeapon->m_CBodyComponent()->m_pSceneNode())
+		g_Skin.NextFrame([pBasePlayerWeapon = pBasePlayerWeapon]()
 		{
-			pBasePlayerWeapon->m_CBodyComponent()->m_pSceneNode()->GetSkeletonInstance()->m_modelState().m_MeshGroupMask() = 2;
-		}
-		
-		if(weaponId == 59 || weaponId == 42)
-		{
-			auto knife_idx = g_PlayerKnifes.find(steamid);
-			if(knife_idx == g_PlayerKnifes.end())return;
+			int64_t steamid = pBasePlayerWeapon->m_OriginalOwnerXuidLow();
+			if(!steamid)return;
+			int64_t weaponId = pBasePlayerWeapon->m_AttributeManager().m_Item().m_iItemDefinitionIndex();
+
+			auto weapon = g_PlayerSkins.find(steamid);
+			if(weapon == g_PlayerSkins.end())return;
+			auto skin_parm = weapon->second.find(weaponId);
+			if(skin_parm == weapon->second.end())return;
 			
-			char buf[64] = {0};
-			int index = static_cast<CEntityInstance*>(pBasePlayerWeapon)->m_pEntity->m_EHandle.GetEntryIndex();
-			sprintf(buf,"i_subclass_change %d %d",knife_idx->second,index);
-			engine->ServerCommand(buf);
-		}
-		
-		//META_CONPRINTF( "class: %s\n", static_cast<CEntityInstance*>(pBasePlayerWeapon)->m_pEntity->m_designerName.String());
-		META_CONPRINTF( "steamId: %lld itemId: %d\n", steamid, weaponId);
-	});
+			pBasePlayerWeapon->m_nFallbackPaintKit() = skin_parm->second.m_nFallbackPaintKit;
+			pBasePlayerWeapon->m_nFallbackSeed() = skin_parm->second.m_nFallbackSeed;
+			pBasePlayerWeapon->m_flFallbackWear() = skin_parm->second.m_flFallbackWear;
+
+			pBasePlayerWeapon->m_AttributeManager().m_Item().m_iItemIDHigh() = -1;
+
+			auto weapon_sticker = g_Sticker.find(steamid);
+			if(weapon_sticker != g_Sticker.end())
+			{
+				auto sticker_parm = weapon_sticker->second.find(weaponId);
+				if(sticker_parm != weapon_sticker->second.end())
+					pBasePlayerWeapon->m_AttributeManager().m_Item().m_AttributeList().AddAttribute(sticker_parm->second.sticker_pos,sticker_parm->second.sticker_id); //sticker slot 0 id
+			}
+
+			if(weaponId == 59 || weaponId == 42)
+			{
+				auto knife_idx = g_PlayerKnifes.find(steamid);
+				if(knife_idx == g_PlayerKnifes.end())return;
+				
+				char buf[64] = {0};
+				int index = static_cast<CEntityInstance*>(pBasePlayerWeapon)->m_pEntity->m_EHandle.GetEntryIndex();
+				sprintf(buf,"i_subclass_change %d %d",knife_idx->second,index);
+				engine->ServerCommand(buf);
+			}
+			else
+			{
+				if(!pBasePlayerWeapon->m_AttributeManager().m_Item().m_iAccountID() && pBasePlayerWeapon->m_CBodyComponent() && pBasePlayerWeapon->m_CBodyComponent()->m_pSceneNode())
+				{
+					pBasePlayerWeapon->m_CBodyComponent()->m_pSceneNode()->GetSkeletonInstance()->m_modelState().m_MeshGroupMask() = 2;
+				}
+			}
+			//META_CONPRINTF( "class: %s\n", static_cast<CEntityInstance*>(pBasePlayerWeapon)->m_pEntity->m_designerName.String());
+			META_CONPRINTF( "steamId: %lld itemId: %d\n", steamid, weaponId);
+		});
+	#ifdef _WIN32
+	}
+	catch(...){}
+	#endif
 }
 
-CON_COMMAND_CHAT(skin, "Change Skin")
+CON_COMMAND_F(skin, "修改皮肤", FCVAR_CLIENT_CAN_EXECUTE)
 {
 	if(context.GetPlayerSlot() == -1)return;
 	CCSPlayerController* pPlayerController = (CCSPlayerController*)g_pEntitySystem->GetBaseEntity((CEntityIndex)(context.GetPlayerSlot().Get() + 1));
-	CCSPlayerPawnBase* pPlayerPawn = pPlayerController->m_hPlayerPawn();
+	CCSPlayerPawn* pPlayerPawn = pPlayerController->m_hPlayerPawn();
 	if (!pPlayerPawn || pPlayerPawn->m_lifeState() != LIFE_ALIVE)
 		return;
 	
@@ -305,7 +340,8 @@ CON_COMMAND_CHAT(skin, "Change Skin")
 	
 	if(args.ArgC() == 1)
 	{
-		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN]\x01 Acceseaza https://tequilagg.ro pentru a genera comenzi pentru skinuri!",nullptr, nullptr, nullptr, nullptr);
+		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01访问：http://skin.ymos.top/ 生成皮肤修改参数",nullptr, nullptr, nullptr, nullptr);
+		FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01开源仓库：https://github.com/yuzhouUvU/cs2_weapons_skin",nullptr, nullptr, nullptr, nullptr);
 		return;
 	}
 	char buf[255] = {0};
@@ -313,20 +349,56 @@ CON_COMMAND_CHAT(skin, "Change Skin")
 	{
 		if(args.ArgC() != 5)
 		{
-			sprintf(buf, " \x04 [SKIN] \x01%s Ai nevoie de 4 parametrii pentru a modifica cutitul!",pPlayerController->m_iszPlayerName());
-			FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01修改刀具控制台输入 'skin 编号 模板 磨损 刀具编号'",nullptr, nullptr, nullptr, nullptr);
 			return;
 		}
 		g_PlayerKnifes[steamid] = atoi(args.Arg(4));
 	}
 	else
 	{
-		if(args.ArgC() != 4)
+		if(args.ArgC() != 4 && args.ArgC() != 6)
 		{
-			sprintf(buf, " \x04 [SKIN] \x01%s Ai nevoie de 3 parametrii pentru a schimba skinul!",pPlayerController->m_iszPlayerName());
-			FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01修改武器皮肤控制台输入 'skin 编号 模板 磨损'",nullptr, nullptr, nullptr, nullptr);
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01添加武器贴纸控制台输入 'skin 编号 模板 磨损 贴纸编号 位置(0-5)'",nullptr, nullptr, nullptr, nullptr);
 			return;
 		}
+	}
+
+	if(args.ArgC() == 6 && weaponId!= 59 && weaponId!= 42)
+	{
+		g_Sticker[steamid][weaponId].sticker_id = atoi(args.Arg(4));
+		int pos = atoi(args.Arg(5));
+		if(pos > 5 || pos < 0)
+		{
+			FnUTIL_ClientPrint(pPlayerController, 3, " \x04 [SKIN] \x01位置请输入(0-5)之间的数字 ",nullptr, nullptr, nullptr, nullptr);
+			return;
+		}
+		switch (pos)
+		{
+		case 0:
+			g_Sticker[steamid][weaponId].sticker_pos = 113;
+			break;
+		case 1:
+			g_Sticker[steamid][weaponId].sticker_pos = 117;
+			break;
+		case 2:
+			g_Sticker[steamid][weaponId].sticker_pos = 121;
+			break;
+		case 3:
+			g_Sticker[steamid][weaponId].sticker_pos = 125;
+			break;
+		case 4:
+			g_Sticker[steamid][weaponId].sticker_pos = 129;
+			break;
+		case 5:
+			g_Sticker[steamid][weaponId].sticker_pos = 133;
+			break;
+		default:
+			break;
+		}
+
+		sprintf(buf, " \x04 [SKIN] \x01已修改贴纸 贴纸编号:%d 位置:%d",g_Sticker[steamid][weaponId].sticker_id, pos);
+		FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 	}
 
 	g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit = atoi(args.Arg(1));
@@ -342,11 +414,11 @@ CON_COMMAND_CHAT(skin, "Change Skin")
 	//pItemServices->GiveNamedItem(weapon_name->second.c_str());
 	// g_pGameRules->PlayerRespawn(static_cast<CCSPlayerPawn*>(pPlayerPawn));
 	//META_CONPRINTF( "called by %lld\n", steamid);
-	sprintf(buf, " \x04 [SKIN] \x01Skin ales:%d Pattern:%d Wear:%f",g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
+	sprintf(buf, " \x04 [SKIN] \x01已修改皮肤 编号:%d 模板:%d 磨损:%f",g_PlayerSkins[steamid][weaponId].m_nFallbackPaintKit,g_PlayerSkins[steamid][weaponId].m_nFallbackSeed,g_PlayerSkins[steamid][weaponId].m_flFallbackWear);
 	FnUTIL_ClientPrint(pPlayerController, 3, buf,nullptr, nullptr, nullptr, nullptr);
 }
 
-CON_COMMAND_CHAT(i_subclass_change, "subclass change")
+CON_COMMAND_F(i_subclass_change, "subclass change", FCVAR_NONE)
 {
 	FnSubClassChange(context,args);
 }
@@ -358,7 +430,7 @@ const char* Skin::GetLicense()
 
 const char* Skin::GetVersion()
 {
-	return "1.0.0";
+	return "1.0.5";
 }
 
 const char* Skin::GetDate()
@@ -373,21 +445,20 @@ const char* Skin::GetLogTag()
 
 const char* Skin::GetAuthor()
 {
-	return "Krazy";
+	return "宇宙遨游";
 }
 
 const char* Skin::GetDescription()
 {
-	return "Skinchooser";
+	return "武器皮肤插件";
 }
 
 const char* Skin::GetName()
 {
-	return "!WS 2";
+	return "武器皮肤插件";
 }
 
 const char* Skin::GetURL()
 {
-	return "https://tequilagg.ro";
+	return "http://cs2.wssr.top";
 }
-
